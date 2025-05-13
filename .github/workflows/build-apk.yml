@@ -21,17 +21,21 @@ jobs:
         distribution: 'zulu'
         java-version: '11'
 
+    - name: Set environment variables for secrets
+      env:
+        HAS_SIGNING_SECRETS: ${{ secrets.KEYSTORE_FILE && secrets.KEYSTORE_PASSWORD && secrets.KEY_ALIAS && secrets.KEY_PASSWORD }}
+      run: echo "Has signing secrets: $HAS_SIGNING_SECRETS"
+
     - name: Decrypt keystore (if signing required)
-      if: secrets.KEYSTORE_FILE && secrets.KEYSTORE_PASSWORD && secrets.KEY_ALIAS && secrets.KEY_PASSWORD
+      if: env.HAS_SIGNING_SECRETS == 'true'
       run: |
         echo "$KEYSTORE_FILE" | base64 -d > release-key.jks
 
     - name: Build APK
-      run: |
-        ./gradlew assembleRelease
+      run: ./gradlew assembleRelease
 
     - name: Sign APK (if needed)
-      if: secrets.KEYSTORE_FILE && secrets.KEYSTORE_PASSWORD && secrets.KEY_ALIAS && secrets.KEY_PASSWORD
+      if: env.HAS_SIGNING_SECRETS == 'true'
       run: |
         jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
           -keystore release-key.jks \
@@ -40,7 +44,7 @@ jobs:
           app/build/outputs/apk/release/app-release-unsigned.apk ${{ secrets.KEY_ALIAS }}
 
     - name: Verify APK Alignment
-      if: secrets.KEYSTORE_FILE && secrets.KEYSTORE_PASSWORD && secrets.KEY_ALIAS && secrets.KEY_PASSWORD
+      if: env.HAS_SIGNING_SECRETS == 'true'
       run: |
         zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app-release-signed.apk
 
