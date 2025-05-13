@@ -55,7 +55,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: app-release-signed.apk
-        path: app-release-signed.apk
+        path: app/build/outputs/apk/release/app-release-unsigned.apk
 
     - name: Upload to GitHub Releases
       if: secrets.PAT_TOKEN
